@@ -8,6 +8,10 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    allowedHosts: [
+      'taskflowfrontend-vvba.onrender.com',
+      'localhost'
+    ]
   },
   plugins: [
     react(),
