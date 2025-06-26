@@ -8,7 +8,11 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    cors: true
+    cors: true,
+    // allow this external hostname
+    allowedHosts: [
+      "taskflowfrontend-vvba.onrender.com"
+    ]
   },
   plugins: [
     react({
