@@ -1,6 +1,7 @@
 import axios from "axios"
 
-const API_BASE_URL = "https://taskflow-sw5r.onrender.com/api"
+// Use environment variable or fallback to localhost for development
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api" || "https://taskflowfrontend-vvba.onrender.com/api"
 
 // Create axios instance
 const api = axios.create({
@@ -8,6 +9,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 10000, // 10 second timeout
 })
 
 // Request interceptor to add auth token
@@ -20,6 +22,7 @@ api.interceptors.request.use(
     return config
   },
   (error) => {
+    console.error("Request interceptor error:", error)
     return Promise.reject(error)
   },
 )
@@ -28,11 +31,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    console.error("API Error:", error.response?.data || error.message)
+
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem("token")
       localStorage.removeItem("user")
-      window.location.href = "/login"
+      // Only redirect if not already on login page
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = "/login"
+      }
     }
     return Promise.reject(error)
   },
@@ -46,21 +54,36 @@ export const authAPI = {
     email: string
     password: string
   }) => {
-    const response = await api.post("/auth/signup", userData)
-    return response.data
+    try {
+      const response = await api.post("/auth/signup", userData)
+      return response.data
+    } catch (error: any) {
+      console.error("Signup error:", error.response?.data || error.message)
+      throw error
+    }
   },
 
   login: async (credentials: { email: string; password: string }) => {
-    const response = await api.post("/auth/login", credentials)
-    return response.data
+    try {
+      const response = await api.post("/auth/login", credentials)
+      return response.data
+    } catch (error: any) {
+      console.error("Login error:", error.response?.data || error.message)
+      throw error
+    }
   },
 }
 
 // Board API calls
 export const boardAPI = {
   getBoards: async () => {
-    const response = await api.get("/boards")
-    return response.data
+    try {
+      const response = await api.get("/boards")
+      return response.data
+    } catch (error: any) {
+      console.error("Get boards error:", error.response?.data || error.message)
+      throw error
+    }
   },
 
   createBoard: async (boardData: {
@@ -68,23 +91,43 @@ export const boardAPI = {
     description?: string
     backgroundColor?: string
   }) => {
-    const response = await api.post("/boards", boardData)
-    return response.data
+    try {
+      const response = await api.post("/boards", boardData)
+      return response.data
+    } catch (error: any) {
+      console.error("Create board error:", error.response?.data || error.message)
+      throw error
+    }
   },
 
   getBoard: async (boardId: string) => {
-    const response = await api.get(`/boards/${boardId}`)
-    return response.data
+    try {
+      const response = await api.get(`/boards/${boardId}`)
+      return response.data
+    } catch (error: any) {
+      console.error("Get board error:", error.response?.data || error.message)
+      throw error
+    }
   },
 
   updateBoard: async (boardId: string, updates: any) => {
-    const response = await api.put(`/boards/${boardId}`, updates)
-    return response.data
+    try {
+      const response = await api.put(`/boards/${boardId}`, updates)
+      return response.data
+    } catch (error: any) {
+      console.error("Update board error:", error.response?.data || error.message)
+      throw error
+    }
   },
 
   deleteBoard: async (boardId: string) => {
-    const response = await api.delete(`/boards/${boardId}`)
-    return response.data
+    try {
+      const response = await api.delete(`/boards/${boardId}`)
+      return response.data
+    } catch (error: any) {
+      console.error("Delete board error:", error.response?.data || error.message)
+      throw error
+    }
   },
 }
 
@@ -96,46 +139,86 @@ export const columnAPI = {
     position: number
     color?: string
   }) => {
-    const response = await api.post("/columns", columnData)
-    return response.data
+    try {
+      const response = await api.post("/columns", columnData)
+      return response.data
+    } catch (error: any) {
+      console.error("Create column error:", error.response?.data || error.message)
+      throw error
+    }
   },
 
   updateColumn: async (columnId: string, updates: any) => {
-    const response = await api.put(`/columns/${columnId}`, updates)
-    return response.data
+    try {
+      const response = await api.put(`/columns/${columnId}`, updates)
+      return response.data
+    } catch (error: any) {
+      console.error("Update column error:", error.response?.data || error.message)
+      throw error
+    }
   },
 
   deleteColumn: async (columnId: string) => {
-    const response = await api.delete(`/columns/${columnId}`)
-    return response.data
+    try {
+      const response = await api.delete(`/columns/${columnId}`)
+      return response.data
+    } catch (error: any) {
+      console.error("Delete column error:", error.response?.data || error.message)
+      throw error
+    }
   },
 }
 
 // Task API calls
 export const taskAPI = {
   createTask: async (taskData: any) => {
-    const response = await api.post("/tasks", taskData)
-    return response.data
+    try {
+      const response = await api.post("/tasks", taskData)
+      return response.data
+    } catch (error: any) {
+      console.error("Create task error:", error.response?.data || error.message)
+      throw error
+    }
   },
 
   updateTask: async (taskId: string, updates: any) => {
-    const response = await api.put(`/tasks/${taskId}`, updates)
-    return response.data
+    try {
+      const response = await api.put(`/tasks/${taskId}`, updates)
+      return response.data
+    } catch (error: any) {
+      console.error("Update task error:", error.response?.data || error.message)
+      throw error
+    }
   },
 
   moveTask: async (taskId: string, moveData: { columnId: string; position: number }) => {
-    const response = await api.put(`/tasks/${taskId}/move`, moveData)
-    return response.data
+    try {
+      const response = await api.put(`/tasks/${taskId}/move`, moveData)
+      return response.data
+    } catch (error: any) {
+      console.error("Move task error:", error.response?.data || error.message)
+      throw error
+    }
   },
 
   deleteTask: async (taskId: string) => {
-    const response = await api.delete(`/tasks/${taskId}`)
-    return response.data
+    try {
+      const response = await api.delete(`/tasks/${taskId}`)
+      return response.data
+    } catch (error: any) {
+      console.error("Delete task error:", error.response?.data || error.message)
+      throw error
+    }
   },
 
   addComment: async (taskId: string, content: string) => {
-    const response = await api.post(`/tasks/${taskId}/comments`, { content })
-    return response.data
+    try {
+      const response = await api.post(`/tasks/${taskId}/comments`, { content })
+      return response.data
+    } catch (error: any) {
+      console.error("Add comment error:", error.response?.data || error.message)
+      throw error
+    }
   },
 }
 
