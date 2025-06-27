@@ -9,16 +9,13 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     cors: true,
-    // allow this external hostname
-    allowedHosts: [
-      "taskflowfrontend-vvba.onrender.com"
-    ]
+    allowedHosts: ["taskflowfrontend-vvba.onrender.com"],
   },
   plugins: [
     react({
-      jsxImportSource: "@emotion/react"
+      jsxImportSource: "@emotion/react",
     }),
-    mode === 'development' && componentTagger(),
+    mode === "development" && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -27,15 +24,24 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     esbuildOptions: {
-      // Fix for "React is not defined"
       define: {
-        global: 'globalThis',
+        global: "globalThis", // Fix for "React is not defined"
       },
     },
   },
   build: {
+    chunkSizeWarningLimit: 1500, // Optional: avoid warning for large chunks
     commonjsOptions: {
       transformMixedEsModules: true,
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Splitting out common libraries to reduce main bundle size
+          react: ["react", "react-dom"],
+          emotion: ["@emotion/react", "@emotion/styled"],
+        },
+      },
     },
   },
 }));
