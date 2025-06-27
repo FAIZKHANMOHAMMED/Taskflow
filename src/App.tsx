@@ -12,55 +12,57 @@ import "./App.css"
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+    <div className="w-full h-full">
+      <Router>
+        <div className="App w-full h-full">
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
 
-          {/* Protected routes */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <HomePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/board/:boardId"
-            element={
-              <ProtectedRoute>
-                <BoardDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <ProtectedRoute>
-                <Analytics />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/team"
-            element={
-              <ProtectedRoute>
-                <TeamSettings />
-              </ProtectedRoute>
-            }
-          />
+            {/* Protected routes */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <HomePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/board/:boardId"
+              element={
+                <ProtectedRoute>
+                  <BoardDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <Analytics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/team"
+              element={
+                <ProtectedRoute>
+                  <TeamSettings />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Catch all route */}
-          <Route path="/404" element={<NotFound />} />
-          <Route path="*" element={<Navigate to="/404" replace />} />
-        </Routes>
+            {/* Catch all route */}
+            <Route path="/404" element={<NotFound />} />
+            <Route path="*" element={<Navigate to="/404" replace />} />
+          </Routes>
 
-        <Toaster />
-      </div>
-    </Router>
+          <Toaster />
+        </div>
+      </Router>
+    </div>
   )
 }
 
