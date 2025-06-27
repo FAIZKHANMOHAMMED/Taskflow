@@ -1,72 +1,67 @@
-import { useEffect } from "react"
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { Toaster } from "@/components/ui/toaster"
-import { Toaster as Sonner } from "@/components/ui/sonner"
-import { TooltipProvider } from "@/components/ui/tooltip"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { BrowserRouter, Routes, Route } from "react-router-dom"
-import ProtectedRoute from "./components/ProtectedRoute"
-import { useAuthStore } from "./store/authStore"
+import { ProtectedRoute } from "./components/ProtectedRoute"
+import Login from "./pages/Login"
+import Signup from "./pages/Signup"
 import HomePage from "./pages/HomePage"
-import BoardView from "./pages/BoardView"
 import BoardDetail from "./pages/BoardDetail"
 import Analytics from "./pages/Analytics"
 import TeamSettings from "./pages/TeamSettings"
 import NotFound from "./pages/NotFound"
-import Login from "./pages/Login"
-import Signup from "./pages/Signup"
+import "./App.css"
 
-const queryClient = new QueryClient()
-
-const App = () => {
-  const { initializeAuth } = useAuthStore();
-
-  useEffect(() => {
-    initializeAuth();
-  }, [initializeAuth]);
-
+function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+    <Router>
+      <div className="App">
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          
+
           {/* Protected routes */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/boards" element={
-            <ProtectedRoute>
-              <BoardView />
-            </ProtectedRoute>
-          } />
-          <Route path="/board/:boardId" element={
-            <ProtectedRoute>
-              <BoardDetail />
-            </ProtectedRoute>
-          } />
-          <Route path="/analytics" element={
-            <ProtectedRoute>
-              <Analytics />
-            </ProtectedRoute>
-          } />
-          <Route path="/team-settings" element={
-            <ProtectedRoute>
-              <TeamSettings />
-            </ProtectedRoute>
-          } />
-          <Route path="*" element={<NotFound />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/board/:boardId"
+            element={
+              <ProtectedRoute>
+                <BoardDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <Analytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/team"
+            element={
+              <ProtectedRoute>
+                <TeamSettings />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Catch all route */}
+          <Route path="/404" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/404" replace />} />
         </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
-};
+
+        <Toaster />
+      </div>
+    </Router>
+  )
+}
 
 export default App

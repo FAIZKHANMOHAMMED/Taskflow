@@ -3,19 +3,14 @@ import { persist } from "zustand/middleware"
 import { authAPI } from "../services/api"
 
 interface User {
-  _id: string
+  id: string
   firstName: string
   lastName: string
   email: string
-  role: string
-  avatar?: string
-  preferences?: {
-    theme: string
-    notifications: {
-      email: boolean
-      push: boolean
-    }
-  }
+  avatar?: string | null
+  role?: string
+  createdAt: string
+  updatedAt: string
 }
 
 interface AuthState {
@@ -27,7 +22,7 @@ interface AuthState {
 
   // Actions
   login: (email: string, password: string) => Promise<void>
-  signup: (userData: {
+  register: (userData: {
     firstName: string
     lastName: string
     email: string
@@ -35,7 +30,8 @@ interface AuthState {
   }) => Promise<void>
   logout: () => void
   clearError: () => void
-  initializeAuth: () => void
+  setUser: (user: User) => void
+  updateProfile: (userData: Partial<User>) => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -49,121 +45,89 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null })
+
         try {
-          console.log("Attempting login for:", email)
+          console.log("AuthStore: Attempting login for:", email)
           const response = await authAPI.login({ email, password })
-          console.log("Login response:", response)
 
-          const { token, user } = response
+          console.log("AuthStore: Login response:", response)
 
-          if (!token || !user) {
-            throw new Error("Invalid response from server")
+          if (response.success && response.token && response.user) {
+            // Store token and user data
+            localStorage.setItem("token", response.token)
+            localStorage.setItem("user", JSON.stringify(response.user))
+
+            set({
+              user: response.user,
+              token: response.token,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+            })
+
+            console.log("AuthStore: Login successful")
+          } else {
+            throw new Error("Invalid response format")
           }
-
-          // Store token in localStorage
-          localStorage.setItem("token", token)
-          localStorage.setItem("user", JSON.stringify(user))
-
-          set({
-            user,
-            token,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          })
-
-          console.log("Login successful")
         } catch (error: any) {
-          console.error("Login error:", error)
-
-          let errorMessage = "Login failed. Please try again."
-
-          if (error.response?.data?.message) {
-            errorMessage = error.response.data.message
-          } else if (error.response?.data?.errors) {
-            errorMessage = error.response.data.errors[0]?.msg || errorMessage
-          } else if (error.message) {
-            errorMessage = error.message
-          } else if (error.code === "NETWORK_ERROR" || error.code === "ERR_NETWORK") {
-            errorMessage = "Unable to connect to server. Please check your internet connection."
-          }
-
+          console.error("AuthStore: Login failed:", error)
           set({
-            error: errorMessage,
-            isLoading: false,
-            isAuthenticated: false,
             user: null,
             token: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: error.message || "Login failed",
           })
-
           throw error
         }
       },
 
-      signup: async (userData) => {
+      register: async (userData) => {
         set({ isLoading: true, error: null })
+
         try {
-          console.log("Attempting signup for:", userData.email)
-          const response = await authAPI.signup(userData)
-          console.log("Signup response:", response)
+          console.log("AuthStore: Attempting registration for:", userData.email)
+          const response = await authAPI.register(userData)
 
-          const { token, user } = response
+          if (response.success && response.token && response.user) {
+            // Store token and user data
+            localStorage.setItem("token", response.token)
+            localStorage.setItem("user", JSON.stringify(response.user))
 
-          if (!token || !user) {
-            throw new Error("Invalid response from server")
+            set({
+              user: response.user,
+              token: response.token,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+            })
+
+            console.log("AuthStore: Registration successful")
+          } else {
+            throw new Error("Invalid response format")
           }
-
-          // Store token in localStorage
-          localStorage.setItem("token", token)
-          localStorage.setItem("user", JSON.stringify(user))
-
-          set({
-            user,
-            token,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          })
-
-          console.log("Signup successful")
         } catch (error: any) {
-          console.error("Signup error:", error)
-
-          let errorMessage = "Signup failed. Please try again."
-
-          if (error.response?.data?.message) {
-            errorMessage = error.response.data.message
-          } else if (error.response?.data?.errors) {
-            errorMessage = error.response.data.errors[0]?.msg || errorMessage
-          } else if (error.message) {
-            errorMessage = error.message
-          } else if (error.code === "NETWORK_ERROR" || error.code === "ERR_NETWORK") {
-            errorMessage = "Unable to connect to server. Please check your internet connection."
-          }
-
+          console.error("AuthStore: Registration failed:", error)
           set({
-            error: errorMessage,
-            isLoading: false,
-            isAuthenticated: false,
             user: null,
             token: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: error.message || "Registration failed",
           })
-
           throw error
         }
       },
 
       logout: () => {
-        console.log("Logging out user")
-
-        // Clear localStorage
+        console.log("AuthStore: Logging out")
         localStorage.removeItem("token")
         localStorage.removeItem("user")
-
         set({
           user: null,
           token: null,
           isAuthenticated: false,
+          isLoading: false,
           error: null,
         })
       },
@@ -172,34 +136,31 @@ export const useAuthStore = create<AuthState>()(
         set({ error: null })
       },
 
-      initializeAuth: () => {
+      setUser: (user: User) => {
+        localStorage.setItem("user", JSON.stringify(user))
+        set({ user })
+      },
+
+      updateProfile: async (userData: Partial<User>) => {
+        set({ isLoading: true, error: null })
+
         try {
-          const token = localStorage.getItem("token")
-          const userStr = localStorage.getItem("user")
+          const response = await authAPI.updateProfile(userData)
+          const updatedUser = response.user || response
 
-          if (token && userStr) {
-            const user = JSON.parse(userStr)
-            console.log("Initializing auth with stored data:", { user: user.email, hasToken: !!token })
-
-            set({
-              user,
-              token,
-              isAuthenticated: true,
-            })
-          } else {
-            console.log("No stored auth data found")
-          }
-        } catch (error) {
-          console.error("Error initializing auth:", error)
-          // Invalid stored data, clear it
-          localStorage.removeItem("token")
-          localStorage.removeItem("user")
-
+          localStorage.setItem("user", JSON.stringify(updatedUser))
           set({
-            user: null,
-            token: null,
-            isAuthenticated: false,
+            user: updatedUser,
+            isLoading: false,
+            error: null,
           })
+        } catch (error: any) {
+          console.error("AuthStore: Update profile failed:", error)
+          set({
+            isLoading: false,
+            error: error.message || "Failed to update profile",
+          })
+          throw error
         }
       },
     }),

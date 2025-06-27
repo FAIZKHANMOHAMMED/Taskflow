@@ -505,10 +505,10 @@ const BoardView = () => {
                   <p className="text-slate-400 text-sm text-center py-4">No upcoming deadlines</p>
                 ) : (
                   upcomingDeadlines.map((task) => (
-                    <div key={task.id} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+                    <div key={task._id} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white truncate">{task.title}</p>
-                        <p className="text-xs text-slate-400 truncate">{task.assignee}</p>
+                        <p className="text-xs text-slate-400 truncate">{`${task.assignee.firstName} ${task.assignee.lastName}`}</p>
                       </div>
                       <div className="text-right flex-shrink-0 ml-2">
                         <p className="text-xs text-slate-300">{format(new Date(task.dueDate), "MMM dd")}</p>
@@ -546,7 +546,7 @@ const BoardView = () => {
                   <p className="text-slate-400 text-sm text-center py-4">No recent activity</p>
                 ) : (
                   recentBoards.map((board) => (
-                    <Link key={board.id} to={`/board/${board.id}`} className="block">
+                    <Link key={board._id} to={`/board/${board._id}`} className="block">
                       <div className="flex items-center space-x-3 p-3 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors">
                         <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
                           <Target className="w-3 h-3 sm:w-4 sm:h-4 text-white" />

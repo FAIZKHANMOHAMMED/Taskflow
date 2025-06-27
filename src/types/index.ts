@@ -3,6 +3,7 @@ export interface User {
   firstName: string
   lastName: string
   email: string
+  avatar?: string
 }
 
 export interface Comment {
@@ -42,10 +43,25 @@ export interface Column {
 
 export interface Board {
   id: string
+  _id?: string  // For MongoDB compatibility
   title: string
   description: string
   createdAt: string
-  createdBy: string
+  createdBy: string | {
+    _id: string
+    firstName: string
+    lastName: string
+    email: string
+  }
+  columns?: Column[]
+  members?: Array<{
+    user: User
+    role: 'admin' | 'member' | 'owner'
+    joinedAt?: string
+  }>
+  backgroundColor?: string
+  updatedAt?: string
+  backgroundColor?: string
 }
 
 export interface SearchFilters {

@@ -1,276 +1,405 @@
 "use client"
-import { useNavigate } from "react-router-dom"
-import { ArrowRight, CheckCircle, Star, LogOut } from "lucide-react"
-import { useAuthStore } from "@/store/authStore"
+
+import type React from "react"
+import { useState, useEffect } from "react"
+import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  Plus,
+  Calendar,
+  Users,
+  CheckCircle,
+  Clock,
+  TrendingUp,
+  BarChart3,
+  Settings,
+  Menu,
+  LogOut,
+  Home,
+  Kanban,
+} from "lucide-react"
+import { useAuthStore } from "../store/authStore"
+import { useBoardStore } from "../store/boardStore"
 
 const HomePage = () => {
   const navigate = useNavigate()
-  const { logout } = useAuthStore()
-  
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
+  const { user, logout } = useAuthStore()
+  const { boards, tasks, fetchBoards, createBoard, deleteBoard, isLoading } = useBoardStore()
+
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [newBoard, setNewBoard] = useState({
+    title: "",
+    description: "",
+    backgroundColor: "#1e293b",
+  })
+
+  useEffect(() => {
+    fetchBoards()
+  }, [fetchBoards])
+
+  const handleCreateBoard = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newBoard.title.trim()) return
+
+    try {
+      await createBoard(newBoard)
+      setNewBoard({ title: "", description: "", backgroundColor: "#1e293b" })
+      setIsCreateDialogOpen(false)
+    } catch (error) {
+      console.error("Failed to create board:", error)
+    }
   }
 
-  const testimonials = [
-    {
-      name: "Sarah Johnson",
-      role: "Project Manager",
-      company: "TechCorp",
-      content:
-        "This task management tool has revolutionized how our team collaborates. The intuitive interface and powerful features make project management effortless.",
-      rating: 5,
-    },
-    {
-      name: "Michael Chen",
-      role: "Software Developer",
-      company: "StartupXYZ",
-      content:
-        "The drag-and-drop functionality and real-time updates have significantly improved our development workflow. Highly recommended!",
-      rating: 5,
-    },
-    {
-      name: "Emily Rodriguez",
-      role: "Marketing Director",
-      company: "Creative Agency",
-      content:
-        "Perfect for managing multiple campaigns. The analytics dashboard provides valuable insights into team productivity.",
-      rating: 5,
-    },
-  ]
+  const handleDeleteBoard = async (boardId: string, boardTitle: string) => {
+    if (window.confirm(`Are you sure you want to delete "${boardTitle}"? This action cannot be undone.`)) {
+      try {
+        await deleteBoard(boardId)
+      } catch (error) {
+        console.error("Failed to delete board:", error)
+      }
+    }
+  }
+
+  const handleSignOut = () => {
+    logout()
+    navigate("/login")
+  }
+
+  // Calculate stats
+  const totalTasks = tasks.length
+  const completedTasks = tasks.filter((task) => task.status === "completed").length
+  const inProgressTasks = tasks.filter((task) => task.status === "in-progress").length
+  const overdueTasks = tasks.filter((task) => {
+    if (!task.dueDate) return false
+    return new Date(task.dueDate) < new Date() && task.status !== "completed"
+  }).length
+
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+
+  const getUserInitials = (user: any) => {
+    if (!user) return "U"
+    const firstName = user.firstName || ""
+    const lastName = user.lastName || ""
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || user.email?.charAt(0).toUpperCase() || "U"
+  }
+
+  const MobileMenu = () => (
+    <div className="flex flex-col h-full">
+      {/* User Profile Section */}
+      <div className="p-6 border-b border-slate-700">
+        <div className="flex items-center space-x-3">
+          <Avatar className="h-12 w-12">
+            <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-semibold">
+              {getUserInitials(user)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-white truncate">
+              {user?.firstName} {user?.lastName}
+            </p>
+            <p className="text-xs text-slate-400 truncate">{user?.email}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Links */}
+      <div className="flex-1 px-4 py-6 space-y-2">
+        <Link
+          to="/"
+          className="flex items-center px-3 py-2 text-sm font-medium text-white bg-slate-700 rounded-lg"
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          <Home className="w-5 h-5 mr-3" />
+          Dashboard
+        </Link>
+        <Link
+          to="/analytics"
+          className="flex items-center px-3 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          <BarChart3 className="w-5 h-5 mr-3" />
+          Analytics
+        </Link>
+        <Link
+          to="/team"
+          className="flex items-center px-3 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          <Users className="w-5 h-5 mr-3" />
+          Team Settings
+        </Link>
+      </div>
+
+      {/* Sign Out Button */}
+      <div className="p-4 border-t border-slate-700">
+        <Button onClick={handleSignOut} variant="destructive" className="w-full bg-red-600 hover:bg-red-700 text-white">
+          <LogOut className="w-4 h-4 mr-2" />
+          Sign Out
+        </Button>
+      </div>
+    </div>
+  )
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Navigation */}
-      <nav className="border-b border-slate-700/50 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-white">TaskFlow</span>
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            {/* Mobile Menu */}
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden text-white">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-80 bg-slate-900 border-slate-700 text-white p-0">
+                <MobileMenu />
+              </SheetContent>
+            </Sheet>
+
+            <div>
+              <h1 className="text-3xl font-bold text-white">Welcome back, {user?.firstName || "User"}!</h1>
+              <p className="text-slate-400 mt-1">Here's what's happening with your projects today.</p>
             </div>
-            <div className="hidden md:flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                className="text-slate-300 hover:bg-slate-800 hover:text-white"
-                onClick={handleLogout}
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
+          </div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-4">
+            <Link to="/analytics">
+              <Button variant="ghost" className="text-slate-300 hover:text-white">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Analytics
               </Button>
-              <a href="#testimonials" className="text-slate-300 hover:text-white transition-colors">
-                Testimonials
-              </a>
-              <Button onClick={() => navigate("/boards")} className="bg-blue-600 hover:bg-blue-700 text-white">
-                Get Started
+            </Link>
+            <Link to="/team">
+              <Button variant="ghost" className="text-slate-300 hover:text-white">
+                <Settings className="w-4 h-4 mr-2" />
+                Team
               </Button>
-            </div>
-            <div className="md:hidden">
-              <Button
-                onClick={() => navigate("/boards")}
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Start
-              </Button>
-            </div>
+            </Link>
+            <Avatar className="h-8 w-8 cursor-pointer" onClick={handleSignOut}>
+              <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white text-sm">
+                {getUserInitials(user)}
+              </AvatarFallback>
+            </Avatar>
           </div>
         </div>
-      </nav>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32">
-          <div className="text-center">
-            <Badge className="mb-6 bg-blue-500/10 text-blue-400 border-blue-500/20">
-              ✨ New: Advanced Analytics Dashboard
-            </Badge>
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-              Manage Tasks
-              <span className="block bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                Like a Pro
-              </span>
-            </h1>
-            <p className="text-xl sm:text-2xl text-slate-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Streamline your workflow with our powerful task management platform. Collaborate seamlessly, track
-              progress, and achieve more together.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button
-                onClick={() => navigate("/boards")}
-                size="lg"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-              >
-                Start Managing Tasks
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white px-8 py-4 text-lg"
-              >
-                Watch Demo
-              </Button>
-            </div>
-            <div className="mt-12 flex flex-wrap justify-center items-center gap-8 text-slate-400">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-5 h-5 text-green-500" />
-                <span>Free to start</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-5 h-5 text-green-500" />
-                <span>No credit card required</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-5 h-5 text-green-500" />
-                <span>Setup in 2 minutes</span>
-              </div>
-            </div>
-          </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-300">Total Tasks</CardTitle>
+              <CheckCircle className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{totalTasks}</div>
+              <p className="text-xs text-slate-400">Across all boards</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-300">In Progress</CardTitle>
+              <Clock className="h-4 w-4 text-yellow-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{inProgressTasks}</div>
+              <p className="text-xs text-slate-400">Currently active</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-300">Completed</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{completedTasks}</div>
+              <p className="text-xs text-slate-400">{completionRate}% completion rate</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-300">Overdue</CardTitle>
+              <Calendar className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{overdueTasks}</div>
+              <p className="text-xs text-slate-400">Need attention</p>
+            </CardContent>
+          </Card>
         </div>
-      </section>
 
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-20 sm:py-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">Loved by teams worldwide</h2>
-            <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-              See what our users have to say about their experience with TaskFlow.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
+        {/* Boards Section */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-white">Your Boards</h2>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Board
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-slate-800 border-slate-700 text-white">
+              <DialogHeader>
+                <DialogTitle className="text-white">Create New Board</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleCreateBoard} className="space-y-4">
+                <div>
+                  <Label htmlFor="title" className="text-slate-300">
+                    Board Title
+                  </Label>
+                  <Input
+                    id="title"
+                    value={newBoard.title}
+                    onChange={(e) => setNewBoard({ ...newBoard, title: e.target.value })}
+                    placeholder="Enter board title"
+                    required
+                    className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="description" className="text-slate-300">
+                    Description (Optional)
+                  </Label>
+                  <Textarea
+                    id="description"
+                    value={newBoard.description}
+                    onChange={(e) => setNewBoard({ ...newBoard, description: e.target.value })}
+                    placeholder="Enter board description"
+                    className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsCreateDialogOpen(false)}
+                    className="border-slate-600 text-slate-300 hover:text-white"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    Create Board
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Boards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {boards.map((board) => {
+            const boardTasks = tasks.filter((task) => task.boardId === board._id)
+            const boardCompletedTasks = boardTasks.filter((task) => task.status === "completed")
+            const boardProgress =
+              boardTasks.length > 0 ? Math.round((boardCompletedTasks.length / boardTasks.length) * 100) : 0
+
+            return (
               <Card
-                key={index}
-                className="bg-slate-800/50 border-slate-700 hover:bg-slate-700/50 transition-all duration-300"
+                key={board._id}
+                className="bg-slate-800/50 border-slate-700 backdrop-blur-sm hover:bg-slate-800/70 transition-all duration-200 cursor-pointer group"
+                onClick={() => navigate(`/board/${board._id}`)}
               >
                 <CardHeader>
-                  <div className="flex items-center space-x-1 mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-                    ))}
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-white group-hover:text-blue-400 transition-colors">
+                      {board.title}
+                    </CardTitle>
+                    <Kanban className="h-5 w-5 text-slate-400 group-hover:text-blue-400 transition-colors" />
                   </div>
-                  <CardDescription className="text-slate-300 text-base leading-relaxed">
-                    "{testimonial.content}"
-                  </CardDescription>
+                  {board.description && (
+                    <CardDescription className="text-slate-400 line-clamp-2">{board.description}</CardDescription>
+                  )}
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                      {testimonial.name.charAt(0)}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="text-sm text-slate-300">
+                        <span className="font-medium">{boardTasks.length}</span> tasks
+                      </div>
+                      <div className="text-sm text-slate-300">
+                        <span className="font-medium">{board.members.length}</span> members
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-white font-semibold">{testimonial.name}</p>
-                      <p className="text-slate-400 text-sm">
-                        {testimonial.role} at {testimonial.company}
-                      </p>
+                    <Badge variant="secondary" className="bg-slate-700 text-slate-300">
+                      {boardProgress}% complete
+                    </Badge>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="w-full bg-slate-700 rounded-full h-2">
+                    <div
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${boardProgress}%` }}
+                    ></div>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="text-xs text-slate-400">
+                      Updated {new Date(board.updatedAt).toLocaleDateString()}
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteBoard(board._id, board.title)
+                      }}
+                    >
+                      Delete
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+            )
+          })}
 
-      {/* CTA Section */}
-      <section className="py-20 sm:py-32 bg-gradient-to-r from-blue-600/20 to-purple-600/20">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
-            Ready to transform your workflow?
-          </h2>
-          <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
-            Join thousands of teams who have already improved their productivity with TaskFlow.
-          </p>
-          <Button
-            onClick={() => navigate("/boards")}
-            size="lg"
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-12 py-4 text-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-          >
-            Get Started for Free
-            <ArrowRight className="ml-2 w-6 h-6" />
-          </Button>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-slate-900 border-t border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold text-white">TaskFlow</span>
+          {boards.length === 0 && (
+            <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                <Kanban className="w-12 h-12 text-slate-600" />
               </div>
-              <p className="text-slate-400 mb-4 max-w-md">
-                The modern task management platform that helps teams stay organized and productive.
+              <h3 className="text-xl font-medium text-white mb-2">No boards yet</h3>
+              <p className="text-slate-400 mb-6 max-w-md">
+                Create your first board to start organizing your tasks and collaborating with your team.
               </p>
+              <Button
+                onClick={() => setIsCreateDialogOpen(true)}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Your First Board
+              </Button>
             </div>
-            <div>
-              <h3 className="text-white font-semibold mb-4">Product</h3>
-              <ul className="space-y-2 text-slate-400">
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Dashboard
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Analytics
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Security
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Integrations
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-white font-semibold mb-4">Company</h3>
-              <ul className="space-y-2 text-slate-400">
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    About
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Blog
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Careers
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Contact
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-slate-700 mt-8 pt-8 text-center text-slate-400">
-            <p>&copy; 2024 TaskFlow. All rights reserved.</p>
-          </div>
+          )}
         </div>
-      </footer>
+      </div>
     </div>
   )
 }
